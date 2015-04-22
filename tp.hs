@@ -1,3 +1,5 @@
+import Data.Tree hiding (Tree, Node, Nil)
+
 class Diccionario t where
     vacia       :: Ord k => t k v
     insertar    :: Ord k => (k, v) -> t k v -> t k v
@@ -7,10 +9,23 @@ class Diccionario t where
 
 data BTree32 k a = Nil | Node (BTree32 k a) Int (k, a) (BTree32 k a)
 
+------------------------------------------------------------------------
+indent :: [String] -> [String]
+indent = map ("        "++)
+
+layoutTree :: (Show k, Show a) => BTree32 k a -> [String]
+layoutTree Nil = [] 
+layoutTree (Node l s v r) 
+         = indent (layoutTree r) ++ ["S: "++show s, show (fst v) ++ "->" ++ show (snd v), ""] ++ indent (layoutTree l)
+         
+prettyTree :: (Show k, Show a) => BTree32 k a -> String
+prettyTree = unlines.layoutTree
+
 instance (Show k, Show a) => Show (BTree32 k a) where
-  show Nil = "Nil"
-  show (Node l s v r) = "(" ++ show l ++ " " ++ show s ++
-                        " " ++ show v ++ " " ++ show r ++ ")"
+  show x =  prettyTree x
+
+------------------------------------------------------------------------
+
 
 
 size :: BTree32 k a -> Int
@@ -24,27 +39,36 @@ bst_lookup k (Node l s v r)     | k == (fst v)  = Just (snd v)
                                 | k > (fst v)   = bst_lookup k r      
 
 
-singleL :: BTree32 k a -> BTree32 k a
-singleL Nil = Nil
-singleL (Node a sx vx (Node b sy vy c)) = (Node (Node a sx vx b) sy vy c)
-
 singleR :: BTree32 k a -> BTree32 k a
 singleR Nil = Nil
-singleR (Node (Node a sx vx b) sy vy c) = (Node a sx vx (Node b sy vy c))
+singleR (Node a sx vx (Node b sy vy c)) = (Node (Node a (size a + size b + 1) vx b) sx vy c)
 
-doubleL :: BTree32 k a -> BTree32 k a
-doubleL Nil = Nil
-doubleL (Node (Node a sx vx b) sy vy (Node c sz vz d)) = 
-                        (Node a sx vx (Node (Node b sy vy c) sz vz d))
+singleL :: BTree32 k a -> BTree32 k a
+singleL Nil = Nil
+singleL (Node (Node a sx vx b) sy vy c) = (Node a sy vx (Node b (size b + size c + 1) vy c))
 
 doubleR :: BTree32 k a -> BTree32 k a
 doubleR Nil = Nil
-doubleR (Node a sx vx (Node (Node b sy vy c) sz vz d)) = 
-                        (Node (Node a sx vx b) sy vy (Node c sz vz d))
+doubleR (Node (Node a sx vx b) sy vy (Node c sz vz d)) = 
+                        (Node a sy vx (Node (Node b (size b + size c + 1) vy c) (size b + size c + size d + 2) vz d))
+
+doubleL :: BTree32 k a -> BTree32 k a
+doubleL Nil = Nil
+doubleL (Node a sx vx (Node (Node b sy vy c) sz vz d)) = 
+                        (Node (Node a (size a + size b + 1) vx b) sx vy (Node c (size c + size d + 1) vz d))
 
 balance :: BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
-balance = undefined
-
+balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sr > 3 * sl        =  if size lr < 2 * size rr
+                                                                                then let (Node l' s' v' r') = singleL(Node l (sl+sr+1) v r)
+                                                                                        in balance l' v' r'
+                                                                                else let (Node l' s' v' r') = doubleL(Node l (sl+sr+1) v r)
+                                                                                        in balance l' v' r'
+                                                        | sl > 3 * sr        =  if size ll < 2 * size rl
+                                                                                then let (Node l' s' v' r') = singleR(Node l (sl+sr+1) v r)
+                                                                                        in balance l' v' r'
+                                                                                else let (Node l' s' v' r') = doubleR(Node l (sl+sr+1) v r)
+                                                                                        in balance l' v' r'
+                                                        | otherwise          =  Node l (sl+sr+1) v r 
 
 
 insert :: Ord k => (k, a) -> BTree32 k a -> BTree32 k a
@@ -55,3 +79,22 @@ delRoot = undefined
 
 delete :: Ord k => k -> BTree32 k a -> BTree32 k a
 delete = undefined
+
+
+
+j = (Node Nil 1 (1,'j') Nil)
+h = (Node Nil 1 (1,'h') Nil)
+i = (Node Nil 1 (1,'i') Nil)
+d = (Node Nil 1 (1,'d') Nil)
+
+b = (Node d 2 (1,'b') Nil)
+g = (Node j 2 (1,'g') Nil)
+f = (Node i 2 (1,'f') Nil)
+e = (Node g 4 (1,'e') h)
+c = (Node e 7 (1,'c') f)
+
+a = (Node b 10 (1,'a') c)
+
+
+
+
