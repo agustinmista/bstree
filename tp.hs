@@ -1,4 +1,4 @@
-import Data.Tree hiding (Tree, Node, Nil)
+import Debug.Trace
 
 class Diccionario t where
     vacia       :: Ord k => t k v
@@ -16,16 +16,14 @@ indent = map ("        "++)
 layoutTree :: (Show k, Show a) => BTree32 k a -> [String]
 layoutTree Nil = [] 
 layoutTree (Node l s v r) 
-         = indent (layoutTree r) ++ ["S: "++show s, show (fst v) ++ "->" ++ show (snd v), ""] ++ indent (layoutTree l)
+         = indent (layoutTree r) ++ [show (fst v) ++ "->" ++ show (snd v), "  "++show s] ++ indent (layoutTree l)
          
 prettyTree :: (Show k, Show a) => BTree32 k a -> String
 prettyTree = unlines.layoutTree
 
 instance (Show k, Show a) => Show (BTree32 k a) where
   show x =  prettyTree x
-
 ------------------------------------------------------------------------
-
 
 
 size :: BTree32 k a -> Int
@@ -41,40 +39,59 @@ bst_lookup k (Node l s v r)     | k == (fst v)  = Just (snd v)
 
 singleR :: BTree32 k a -> BTree32 k a
 singleR Nil = Nil
-singleR t@(Node Nil s v Nil) = t
 singleR (Node a sx vx (Node b sy vy c)) = (Node (Node a (size a + size b + 1) vx b) sx vy c)
+
 
 singleL :: BTree32 k a -> BTree32 k a
 singleL Nil = Nil
 singleL (Node (Node a sx vx b) sy vy c) = (Node a sy vx (Node b (size b + size c + 1) vy c))
 
+
 doubleR :: BTree32 k a -> BTree32 k a
 doubleR Nil = Nil
 doubleR (Node (Node a sx vx b) sy vy (Node c sz vz d)) = 
-                        (Node a sy vx (Node (Node b (size b + size c + 1) vy c) (size b + size c + size d + 2) vz d))
+                        (Node a sy vx (Node (Node b (size b + size c + 1) vy c) (size b + size c + size d + 1) vz d))
+
 
 doubleL :: BTree32 k a -> BTree32 k a
 doubleL Nil = Nil
 doubleL (Node a sx vx (Node (Node b sy vy c) sz vz d)) = 
                         (Node (Node a (size a + size b + 1) vx b) sx vy (Node c (size c + size d + 1) vz d))
 
-balance :: BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
+
+balance :: Ord k => BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
 balance Nil v Nil = Node Nil 1 v Nil
-balance Nil v r@(Node lr sr vr rr) = 
-balance l@(Node ll sl vl rl) v Nil = let (Node l' s' v' r') = singleL(Node l (sl+1) v Nil)
-                                        in balance l' v' r'
-balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sr > 3 * sl        =  if size lr < 2 * size rr
+
+balance Nil v@(k,a) r@(Node _ sr vr _)      | k < (fst vr)      = (Node Nil (sr+1) v r)
+                                            | k > (fst vr)      = (Node r (sr+1) v Nil)
+                                            | otherwise         = r
+                                            
+balance l@(Node _ sl vl _) v@(k,a) Nil      | k < (fst vl)      = (Node Nil (sl+1) v l)
+                                            | k > (fst vl)      = (Node l (sl+1) v Nil)
+                                            | otherwise         = l
+
+balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sl + sr <= 1      = Node l (sl+sr+1) v r
+                                                        | sr > 3 * sl       = if size lr < 2 * size rr
                                                                                 then let (Node l' s' v' r') = singleL(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
                                                                                 else let (Node l' s' v' r') = doubleL(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
-                                                        | sl > 3 * sr        =  if size ll < 2 * size rl
+                                                        | sl > 3 * sr       = if size ll < 2 * size rl
                                                                                 then let (Node l' s' v' r') = singleR(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
                                                                                 else let (Node l' s' v' r') = doubleR(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
-                                                        | otherwise          =  Node l (sl+sr+1) v r
+                                                        | otherwise         = Node l (sl+sr+1) v r
 
+{-
+isBalanced :: Ord k => BTree32 k a -> Bool
+isBalanced Nil = True
+isBalanced (Node l s v r)   | size r == 1 && size l == 0    = True
+                            | size r == 0 && size l == 1    = True
+                            | size r <= (3 * size l)        = isBalanced l && isBalanced r
+                            | size l <= (3 * size r)        = isBalanced l && isBalanced r
+                            | otherwise                     = False
+-}
 
 insert :: Ord k => (k, a) -> BTree32 k a -> BTree32 k a
 insert x Nil = Node Nil 1 x Nil
@@ -82,27 +99,35 @@ insert x@(k, a) t@(Node l s v r)	| k < fst v	= balance (insert x l) v r
 									| k > fst v	= balance l v (insert x r)
 									| otherwise = t
 
+
 delRoot :: Ord k => BTree32 k a -> BTree32 k a
-delRoot = undefined
+delRoot Nil = Nil
+delRoot (Node Nil s v Nil) = Nil
+delRoot (Node l s v r)  | size l < size r   = let (Node l' s' v' r') = r in balance l  v' (delRoot r)
+                        | otherwise         = let (Node l' s' v' r') = l in balance (delRoot l) v' r
+
 
 delete :: Ord k => k -> BTree32 k a -> BTree32 k a
-delete = undefined
+delete _ Nil = Nil
+delete x t@(Node l s v r)   | x == (fst v)  = delRoot t  
+                            | x < (fst v)   = balance (delete x l) v r
+                            | x > (fst v)   = balance l v (delete x r)
 
+------------------------------------------------------------------------
 
-
-j = (Node Nil 1 (1,'j') Nil)
-h = (Node Nil 1 (2,'h') Nil)
-i = (Node Nil 1 (3,'i') Nil)
-d = (Node Nil 1 (4,'d') Nil)
-
-b = (Node d 2 (5,'b') Nil)
-g = (Node j 2 (6,'g') Nil)
-f = (Node i 2 (7,'f') Nil)
-e = (Node g 4 (8,'e') h)
-c = (Node e 7 (9,'c') f)
-
-a = (Node b 10 (10,'a') c)
-
-
-
-
+t1 = insert (5,'a') Nil
+t2 = insert (1 , 'c') t1
+t3 = insert (12 , 'f') t2
+t4 = insert (8 , 'e') t3
+t5 = insert (15 , 'h') t4
+t6 = insert (7 , 'i') t5
+t7 = insert (43 , 'j') t6
+t8 = insert (18 , 'k') t7
+t9 = insert (2 , 'l') t8
+t10 = insert (13 , 'm') t9
+t11 = insert (25 , 'n') t10
+t12 = insert (34 , 'o') t11
+t13= insert (26 , 'p') t12
+t14 = insert (45 , 'q') t13
+t15 = insert (14 , 'r') t14
+t16 = insert (46 , 'r') t15
