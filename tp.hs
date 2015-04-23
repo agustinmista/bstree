@@ -41,6 +41,7 @@ bst_lookup k (Node l s v r)     | k == (fst v)  = Just (snd v)
 
 singleR :: BTree32 k a -> BTree32 k a
 singleR Nil = Nil
+singleR t@(Node Nil s v Nil) = t
 singleR (Node a sx vx (Node b sy vy c)) = (Node (Node a (size a + size b + 1) vx b) sx vy c)
 
 singleL :: BTree32 k a -> BTree32 k a
@@ -58,6 +59,10 @@ doubleL (Node a sx vx (Node (Node b sy vy c) sz vz d)) =
                         (Node (Node a (size a + size b + 1) vx b) sx vy (Node c (size c + size d + 1) vz d))
 
 balance :: BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
+balance Nil v Nil = Node Nil 1 v Nil
+balance Nil v r@(Node lr sr vr rr) = 
+balance l@(Node ll sl vl rl) v Nil = let (Node l' s' v' r') = singleL(Node l (sl+1) v Nil)
+                                        in balance l' v' r'
 balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sr > 3 * sl        =  if size lr < 2 * size rr
                                                                                 then let (Node l' s' v' r') = singleL(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
@@ -68,11 +73,14 @@ balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sr > 3 * sl        =  
                                                                                         in balance l' v' r'
                                                                                 else let (Node l' s' v' r') = doubleR(Node l (sl+sr+1) v r)
                                                                                         in balance l' v' r'
-                                                        | otherwise          =  Node l (sl+sr+1) v r 
+                                                        | otherwise          =  Node l (sl+sr+1) v r
 
 
 insert :: Ord k => (k, a) -> BTree32 k a -> BTree32 k a
-insert = undefined
+insert x Nil = Node Nil 1 x Nil
+insert x@(k, a) t@(Node l s v r)	| k < fst v	= balance (insert x l) v r
+									| k > fst v	= balance l v (insert x r)
+									| otherwise = t
 
 delRoot :: Ord k => BTree32 k a -> BTree32 k a
 delRoot = undefined
@@ -83,17 +91,17 @@ delete = undefined
 
 
 j = (Node Nil 1 (1,'j') Nil)
-h = (Node Nil 1 (1,'h') Nil)
-i = (Node Nil 1 (1,'i') Nil)
-d = (Node Nil 1 (1,'d') Nil)
+h = (Node Nil 1 (2,'h') Nil)
+i = (Node Nil 1 (3,'i') Nil)
+d = (Node Nil 1 (4,'d') Nil)
 
-b = (Node d 2 (1,'b') Nil)
-g = (Node j 2 (1,'g') Nil)
-f = (Node i 2 (1,'f') Nil)
-e = (Node g 4 (1,'e') h)
-c = (Node e 7 (1,'c') f)
+b = (Node d 2 (5,'b') Nil)
+g = (Node j 2 (6,'g') Nil)
+f = (Node i 2 (7,'f') Nil)
+e = (Node g 4 (8,'e') h)
+c = (Node e 7 (9,'c') f)
 
-a = (Node b 10 (1,'a') c)
+a = (Node b 10 (10,'a') c)
 
 
 
