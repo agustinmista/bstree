@@ -83,15 +83,15 @@ balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sl + sr <= 1      = No
                                                                                         in balance l' v' r'
                                                         | otherwise         = Node l (sl+sr+1) v r
 
-{-
+
 isBalanced :: Ord k => BTree32 k a -> Bool
 isBalanced Nil = True
-isBalanced (Node l s v r)   | size r == 1 && size l == 0    = True
+isBalanced (Node Nil s v Nil) = True
+isBalanced (Node l s v r) 	| size r == 1 && size l == 0    = True
                             | size r == 0 && size l == 1    = True
-                            | size r <= (3 * size l)        = isBalanced l && isBalanced r
-                            | size l <= (3 * size r)        = isBalanced l && isBalanced r
-                            | otherwise                     = False
--}
+                            | size r > (3 * size l)        	= False
+                            | size l > (3 * size r)        	= False
+                            | otherwise                     = isBalanced l && isBalanced r
 
 insert :: Ord k => (k, a) -> BTree32 k a -> BTree32 k a
 insert x Nil = Node Nil 1 x Nil
