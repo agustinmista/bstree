@@ -65,7 +65,6 @@ doubleL (Node a sx vx (Node (Node b sy vy c) sz vz d)) =
 -- Crea un BTree32 balanceado a partir de un elemento y dos subárboles
 balance :: Ord k => BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
 balance Nil v Nil = Node Nil 1 v Nil
-
 balance Nil v@(k,a) r@(Node _ sr vr _)      | k < (fst vr)      = (Node Nil (sr+1) v r)
                                             | k > (fst vr)      = (Node r (sr+1) v Nil)
                                             | otherwise         = r
@@ -73,7 +72,7 @@ balance Nil v@(k,a) r@(Node _ sr vr _)      | k < (fst vr)      = (Node Nil (sr+
 balance l@(Node _ sl vl _) v@(k,a) Nil      | k < (fst vl)      = (Node Nil (sl+1) v l)
                                             | k > (fst vl)      = (Node l (sl+1) v Nil)
                                             | otherwise         = l
-
+                                            
 balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sl + sr <= 1      = Node l (sl+sr+1) v r
                                                         | sr > 3 * sl       = if size lr < 2 * size rr
                                                                                 then let (Node l' s' v' r') = singleL(Node l (sl+sr+1) v r)
@@ -122,19 +121,19 @@ delete x t@(Node l s v r)   | x == (fst v)  = delRoot t
 
 
 -- Creo un diccionario de pruebas
-d1 = vacia :: BTree32 Int Char
-d2 = insert (1 , 'c') d1
-d3 = insert (12 , 'f') d2
-d4 = insert (8 , 'e') d3
-d5 = insert (15 , 'h') d4
-d6 = insert (7 , 'i') d5
-d7 = insert (43 , 'j') d6
-d8 = insert (18 , 'k') d7
-d9 = insert (2 , 'l') d8
+d1  = vacia :: BTree32 Int Char
+d2  = insert (1  , 'c') d1
+d3  = insert (12 , 'f') d2
+d4  = insert (8  , 'e') d3
+d5  = insert (15 , 'h') d4
+d6  = insert (7  , 'i') d5
+d7  = insert (43 , 'j') d6
+d8  = insert (18 , 'k') d7
+d9  = insert (2  , 'l') d8
 d10 = insert (13 , 'm') d9
 d11 = insert (25 , 'n') d10
 d12 = insert (34 , 'o') d11
-d13= insert (26 , 'p') d12
+d13 = insert (26 , 'p') d12
 d14 = insert (45 , 'q') d13
 d15 = insert (14 , 'r') d14
-d = insert (46 , 'r') d15
+d   = insert (46 , 'r') d15
