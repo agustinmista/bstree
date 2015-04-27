@@ -32,6 +32,17 @@ size :: BTree32 k a -> Int
 size Nil = 0
 size (Node _ s _ _) = s
 
+left :: BTree32 k a -> BTree32 k a
+left Nil = Nil
+left (Node l _ _ _) = l
+
+right :: BTree32 k a -> BTree32 k a
+right Nil = Nil
+right (Node _ _ _ r) = r
+
+root :: BTree32 k a -> (k, a)
+root (Node _ _ v _) = v
+
 -- Busca recursivamente un elemento en un BTree32
 bst_lookup :: Ord k => k -> BTree32 k a -> Maybe a
 bst_lookup _ Nil = Nothing                                              
@@ -40,51 +51,43 @@ bst_lookup k (Node l s v r)     | k == (fst v)  = Just (snd v)
                                 | k > (fst v)   = bst_lookup k r      
 
 -- Rotación simple a derecha
-singleR :: BTree32 k a -> BTree32 k a
-singleR Nil = Nil
-singleR (Node a sx vx (Node b sy vy c)) = (Node (Node a (size a + size b + 1) vx b) sx vy c)
-
--- Rotación simple a izquierda
 singleL :: BTree32 k a -> BTree32 k a
 singleL Nil = Nil
-singleL (Node (Node a sx vx b) sy vy c) = (Node a sy vx (Node b (size b + size c + 1) vy c))
+singleL (Node a sx vx (Node b sy vy c)) = (Node (Node a (size a + size b + 1) vx b) sx vy c)
+singleL x = x
+
+-- Rotación simple a izquierda
+singleR :: BTree32 k a -> BTree32 k a
+singleR Nil = Nil
+singleR (Node (Node a sx vx b) sy vy c) = (Node a sy vx (Node b (size b + size c + 1) vy c))
+singleR x = x
 
 -- Rotación doble a derecha
 doubleR :: BTree32 k a -> BTree32 k a
 doubleR Nil = Nil
 doubleR (Node (Node a sx vx b) sy vy (Node c sz vz d)) = 
                         (Node a sy vx (Node (Node b (size b + size c + 1) vy c) (size b + size c + size d + 1) vz d))
+doubleR  x = x
+
 
 -- Rotación doble a izquierda
 doubleL :: BTree32 k a -> BTree32 k a
 doubleL Nil = Nil
 doubleL (Node a sx vx (Node (Node b sy vy c) sz vz d)) = 
                         (Node (Node a (size a + size b + 1) vx b) sx vy (Node c (size c + size d + 1) vz d))
+doubleL x = x
 
 
 -- Crea un BTree32 balanceado a partir de un elemento y dos subárboles
 balance :: Ord k => BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
-balance Nil v Nil = Node Nil 1 v Nil
-balance Nil v@(k,a) r@(Node _ sr vr _)      | k < (fst vr)      = (Node Nil (sr+1) v r)
-                                            | k > (fst vr)      = (Node r (sr+1) v Nil)
-                                            | otherwise         = r
-                                            
-balance l@(Node _ sl vl _) v@(k,a) Nil      | k < (fst vl)      = (Node Nil (sl+1) v l)
-                                            | k > (fst vl)      = (Node l (sl+1) v Nil)
-                                            | otherwise         = l
-                                            
-balance l@(Node ll sl vl rl) v r@(Node lr sr vr rr)     | sl + sr <= 1      = Node l (sl+sr+1) v r
-                                                        | sr > 3 * sl       = if size lr < 2 * size rr
-                                                                                then let (Node l' s' v' r') = singleL(Node l (sl+sr+1) v r)
-                                                                                        in balance l' v' r'
-                                                                                else let (Node l' s' v' r') = doubleL(Node l (sl+sr+1) v r)
-                                                                                        in balance l' v' r'
-                                                        | sl > 3 * sr       = if size ll < 2 * size rl
-                                                                                then let (Node l' s' v' r') = singleR(Node l (sl+sr+1) v r)
-                                                                                        in balance l' v' r'
-                                                                                else let (Node l' s' v' r') = doubleR(Node l (sl+sr+1) v r)
-                                                                                        in balance l' v' r'
-                                                        | otherwise         = Node l (sl+sr+1) v r
+balance l v r 	| size l + size r <= 1	=	Node l (size l + size r + 1) v r
+				| size r > 3 * size l	= 	if size (left r) < 2 * size (right r)
+											then singleL(Node l (size l + size r + 1) v r)
+											else doubleL(Node l (size l + size r + 1) v r)
+				| size l > 3 * size r	= 	if size (left l) < 2 * size (right l)
+											then singleR(Node l (size l + size r + 1) v r)
+											else doubleR(Node l (size l + size r + 1) v r)
+				| otherwise				=	Node l (size l + size r + 1) v r
 
 
 -- Verifica que un BTree32 esté balanceado
@@ -120,6 +123,11 @@ delete x t@(Node l s v r)   | x == (fst v)  = delRoot t
                             | x > (fst v)   = balance l v (delete x r)
 
 
+createFromList :: Ord k => [(k, a)] -> BTree32 k a
+createFromList [] = Nil
+createFromList (x:xs) = insert x (createFromList xs)
+
+
 -- Creo un diccionario de pruebas
 d1  = vacia :: BTree32 Int Char
 d2  = insert (1  , 'c') d1
@@ -137,3 +145,4 @@ d13 = insert (26 , 'p') d12
 d14 = insert (45 , 'q') d13
 d15 = insert (14 , 'r') d14
 d   = insert (46 , 'r') d15
+
