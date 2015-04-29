@@ -1,7 +1,7 @@
 {-      
  - TRABAJO PRÁCTICO 1
  -
- - CRESPO, Lisandro     ()
+ - CRESPO, Lisandro     (C-6165/4)
  - MISTA, Agustín       (M-6105/1)
 -}
 
@@ -177,11 +177,6 @@ d   = insertar (46 , 'r') d15
 l = [(x, log x)| x <- [1..10]]
 t = convertir l :: BTree32 Double Double
 
-
-x = Nil
-x1 = insert (4, 4) x
-x2 = insert (2, 4) x1
-x3 = insert (3, 4) x2
 
 
 
