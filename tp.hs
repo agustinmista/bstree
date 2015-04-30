@@ -23,7 +23,7 @@ layoutTree (Node l s v r) =
             indent (layoutTree l)
          
 
--- Proyecciones de un BTree32
+-- PROYECCIONES
 left :: BTree32 k a -> BTree32 k a
 left Nil = Nil
 left (Node l _ _ _) = l
@@ -135,7 +135,6 @@ delete x t@(Node l s v r)   | x == (fst v)  = delRoot t
 
 
 ------------------------------ DICCIONARIO -------------------------------------
-
 class Diccionario t where
     vacia       :: Ord k => t k v
     insertar    :: Ord k => (k, v) -> t k v -> t k v
@@ -155,8 +154,9 @@ instance Diccionario BTree32 where
 createFromList :: Ord k => [(k, a)] -> BTree32 k a
 createFromList [] = Nil
 createFromList (x:xs) = insert x (createFromList xs)
---------------------------------- DATASETS -------------------------------------
 
+
+--------------------------------- DATASETS -------------------------------------
 d1  = vacia :: BTree32 Int Char
 d2  = insertar (1  , 'c') d1
 d3  = insertar (12 , 'f') d2
@@ -174,7 +174,7 @@ d14 = insertar (45 , 'q') d13
 d15 = insertar (14 , 'r') d14
 d   = insertar (46 , 'r') d15
 
-l = [(x, log x)| x <- [1..10]]
+l = [(x, log x)| x <- [1..100]]
 t = convertir l :: BTree32 Double Double
 
 
